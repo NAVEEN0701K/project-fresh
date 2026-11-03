@@ -71,7 +71,7 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-3">
                 <MapPin className="w-4 h-4 text-primary-400 mt-0.5 flex-shrink-0" />
-                <span>12, Green Valley Market, Mumbai, Maharashtra 400001</span>
+                <span>Bangalore, Karnataka 560100</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-primary-400 flex-shrink-0" />
