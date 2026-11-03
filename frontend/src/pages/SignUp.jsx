@@ -27,7 +27,7 @@ export default function SignUp() {
     }
 
     setLoading(true);
-    const { data, error } = await signUp(email, password, fullName);
+    const { error } = await signUp(email, password, fullName);
     setLoading(false);
 
     if (error) {
@@ -39,18 +39,18 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-bg">
+    <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-bg">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-sm border border-gray-100 p-8 sm:p-10">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-3">
-            <div className="w-10 h-10 bg-primary-700 rounded-xl flex items-center justify-center">
+          <Link to="/" className="inline-flex items-center gap-2 mb-3 group">
+            <div className="w-10 h-10 bg-primary-700 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
               <Leaf className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-black text-primary-700">Fresh<span className="text-accent">Basket</span></span>
           </Link>
           <h2 className="text-2xl font-extrabold text-gray-900">Create an Account</h2>
-          <p className="text-xs text-gray-500 mt-1">Join to order fresh fruits, veggies & flowers</p>
+          <p className="text-xs text-gray-500 mt-1">Register to start shopping fresh fruits, veggies & flowers</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -125,7 +125,7 @@ export default function SignUp() {
               <span className="inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
             ) : (
               <>
-                <span>Sign Up</span>
+                <span>Create Account</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}

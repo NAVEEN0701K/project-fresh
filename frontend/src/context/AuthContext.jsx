@@ -1,65 +1,101 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../services/supabaseClient';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Load static user from localStorage on mount
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    try {
+      const savedUser = localStorage.getItem('freshbasket_static_user');
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
+      }
+    } catch (e) {
+      console.warn('Storage read error:', e);
+    } finally {
       setLoading(false);
-    });
-
-    // Listen to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, []);
 
-  // Sign up with Email and Password
+  // Static Sign Up: registers user locally in localStorage
   const signUp = async (email, password, fullName) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-    return { data, error };
+    try {
+      const usersRaw = localStorage.getItem('freshbasket_registered_users');
+      const registeredUsers = usersRaw ? JSON.parse(usersRaw) : [];
+
+      // Check if user already exists
+      const existing = registeredUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
+      if (existing) {
+        return { data: null, error: { message: 'An account with this email already exists' } };
+      }
+
+      const newUser = {
+        id: 'user_' + Date.now(),
+        email,
+        fullName: fullName || email.split('@')[0],
+        password, // saved locally for mock/static authentication
+      };
+
+      registeredUsers.push(newUser);
+      localStorage.setItem('freshbasket_registered_users', JSON.stringify(registeredUsers));
+
+      // Auto sign in new user
+      const authUser = { id: newUser.id, email: newUser.email, fullName: newUser.fullName };
+      setUser(authUser);
+      localStorage.setItem('freshbasket_static_user', JSON.stringify(authUser));
+
+      return { data: authUser, error: null };
+    } catch (err) {
+      return { data: null, error: { message: err.message } };
+    }
   };
 
-  // Sign in with Email and Password
+  // Static Sign In: checks against registered users or permits direct static demo credentials
   const signIn = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { data, error };
+    try {
+      const usersRaw = localStorage.getItem('freshbasket_registered_users');
+      const registeredUsers = usersRaw ? JSON.parse(usersRaw) : [];
+
+      const found = registeredUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
+
+      if (found) {
+        if (found.password !== password) {
+          return { data: null, error: { message: 'Incorrect password' } };
+        }
+        const authUser = { id: found.id, email: found.email, fullName: found.fullName };
+        setUser(authUser);
+        localStorage.setItem('freshbasket_static_user', JSON.stringify(authUser));
+        return { data: authUser, error: null };
+      }
+
+      // Default fallback demo login: allows any valid email/password combination instantly
+      const demoUser = {
+        id: 'user_' + Date.now(),
+        email,
+        fullName: email.split('@')[0],
+      };
+      setUser(demoUser);
+      localStorage.setItem('freshbasket_static_user', JSON.stringify(demoUser));
+      return { data: demoUser, error: null };
+    } catch (err) {
+      return { data: null, error: { message: err.message } };
+    }
   };
 
-  // Sign out
+  // Static Sign Out
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    setUser(null);
+    localStorage.removeItem('freshbasket_static_user');
+    return { error: null };
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        session,
         loading,
         signUp,
         signIn,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Menu, X, Leaf, Search, Heart, Sparkles, User, LogOut } from 'lucide-react';
+import { ShoppingCart, Menu, X, Leaf, Search, Heart, Sparkles, LogOut } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -76,11 +76,12 @@ export default function Header() {
     await signOut();
     setUserDropdownOpen(false);
     addToast('Signed out successfully', 'info');
+    navigate('/login');
   };
 
   const getUserDisplayName = () => {
     if (!user) return '';
-    return user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+    return user.fullName || user.email?.split('@')[0] || 'User';
   };
 
   return (
@@ -205,53 +206,43 @@ export default function Header() {
               )}
             </button>
 
-            {/* User Auth Dropdown */}
-            <div ref={userMenuRef} className="relative">
-              {user ? (
-                <div>
-                  <button
-                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className="flex items-center gap-2 p-1.5 pl-3 rounded-2xl hover:bg-gray-100 transition-all border border-gray-200 text-xs font-bold text-gray-800"
-                  >
-                    <span className="max-w-[90px] truncate">{getUserDisplayName()}</span>
-                    <div className="w-7 h-7 bg-primary-700 text-white rounded-xl flex items-center justify-center font-bold text-xs uppercase">
-                      {getUserDisplayName()[0]}
-                    </div>
-                  </button>
+            {/* User Profile / Sign Out Pill */}
+            {user ? (
+              <div ref={userMenuRef} className="relative">
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center gap-2 p-1.5 pl-3 rounded-2xl hover:bg-gray-100 transition-all border border-gray-200 text-xs font-bold text-gray-800"
+                >
+                  <span className="max-w-[90px] truncate">{getUserDisplayName()}</span>
+                  <div className="w-7 h-7 bg-primary-700 text-white rounded-xl flex items-center justify-center font-bold text-xs uppercase">
+                    {getUserDisplayName()[0]}
+                  </div>
+                </button>
 
-                  {userDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-fade-in">
-                      <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-xs font-bold text-gray-900 truncate">{getUserDisplayName()}</p>
-                        <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
-                      </div>
-                      <button
-                        onClick={handleSignOut}
-                        className="w-full px-4 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 font-bold flex items-center gap-2 transition-colors"
-                      >
-                        <LogOut className="w-3.5 h-3.5" />
-                        Sign Out
-                      </button>
+                {userDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-fade-in">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <p className="text-xs font-bold text-gray-900 truncate">{getUserDisplayName()}</p>
+                      <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="hidden sm:flex items-center gap-1.5">
-                  <Link
-                    to="/login"
-                    className="px-3 py-1.5 text-xs font-bold text-gray-700 hover:text-primary-700 rounded-xl hover:bg-gray-100 transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    to="/signup"
-                    className="px-3 py-1.5 text-xs font-bold bg-primary-700 text-white rounded-xl hover:bg-primary-800 shadow-xs transition-colors"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              )}
-            </div>
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full px-4 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 font-bold flex items-center gap-2 transition-colors"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="px-3.5 py-2 text-xs font-bold bg-primary-700 text-white rounded-xl hover:bg-primary-800 shadow-xs transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
 
             {/* Mobile menu trigger */}
             <button
@@ -298,25 +289,7 @@ export default function Header() {
               </NavLink>
             ))}
 
-            {/* Mobile Auth Links */}
-            {!user ? (
-              <div className="flex gap-2 pt-3 mt-2 border-t border-gray-100">
-                <Link
-                  to="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex-1 text-center py-2 text-xs font-bold text-gray-700 bg-gray-100 rounded-xl"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/signup"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex-1 text-center py-2 text-xs font-bold text-white bg-primary-700 rounded-xl"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            ) : (
+            {user ? (
               <div className="pt-3 mt-2 border-t border-gray-100">
                 <p className="text-xs text-gray-500 mb-1">Signed in as <strong>{getUserDisplayName()}</strong></p>
                 <button
@@ -328,6 +301,16 @@ export default function Header() {
                 >
                   Sign Out
                 </button>
+              </div>
+            ) : (
+              <div className="pt-3 mt-2 border-t border-gray-100">
+                <Link
+                  to="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="block text-center py-2 text-xs font-bold text-white bg-primary-700 rounded-xl"
+                >
+                  Sign In
+                </Link>
               </div>
             )}
           </nav>
