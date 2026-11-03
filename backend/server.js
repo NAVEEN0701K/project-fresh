@@ -1,7 +1,7 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const supabase = require('./supabaseClient');
 
 dotenv.config();
 
@@ -15,8 +15,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Products in-memory store fallback if MongoDB is not running locally
-let inMemoryProducts = [
+// Default initial dataset
+const fallbackProducts = [
   // FRUITS
   {
     _id: "660000000000000000000001",
@@ -443,34 +443,119 @@ let inMemoryProducts = [
   }
 ];
 
-let isDbConnected = false;
+// Helper to map Supabase snake_case to camelCase
+const mapProductFromDb = (p) => ({
+  _id: p.id || p._id,
+  name: p.name,
+  description: p.description,
+  category: p.category,
+  subcategory: p.subcategory,
+  price: Number(p.price),
+  originalPrice: p.original_price ? Number(p.original_price) : (p.originalPrice || null),
+  unit: p.unit,
+  image: p.image,
+  images: p.images || [],
+  stock: p.stock,
+  isAvailable: p.is_available !== undefined ? p.is_available : p.isAvailable,
+  isFeatured: p.is_featured !== undefined ? p.is_featured : p.isFeatured,
+  isSeasonal: p.is_seasonal !== undefined ? p.is_seasonal : p.isSeasonal,
+  rating: p.rating ? Number(p.rating) : 4.5,
+  reviewCount: p.review_count || p.reviewCount || 0,
+  tags: p.tags || [],
+  createdAt: p.created_at || p.createdAt,
+});
 
-// Custom router or middleware for mock in-memory fallback
-app.use('/api/products', (req, res, next) => {
-  if (isDbConnected) {
-    return next();
+// Category stats endpoint
+app.get('/api/products/categories', async (req, res) => {
+  try {
+    if (supabase) {
+      const { data, error } = await supabase.from('products').select('category');
+      if (!error && data && data.length > 0) {
+        const counts = {};
+        data.forEach(item => {
+          counts[item.category] = (counts[item.category] || 0) + 1;
+        });
+        const categories = Object.keys(counts).map(cat => ({ _id: cat, count: counts[cat] }));
+        return res.json({ success: true, data: categories });
+      }
+    }
+  } catch (e) {
+    console.warn('Supabase categories error, using fallback:', e.message);
   }
 
-  // Handle fallback in-memory requests
-  if (req.path === '/categories') {
-    const categories = ['fruits', 'vegetables', 'flowers'].map(cat => ({
-      _id: cat,
-      count: inMemoryProducts.filter(p => p.category === cat).length
-    }));
-    return res.json({ success: true, data: categories });
+  const categories = ['fruits', 'vegetables', 'flowers'].map(cat => ({
+    _id: cat,
+    count: fallbackProducts.filter(p => p.category === cat).length
+  }));
+  return res.json({ success: true, data: categories });
+});
+
+// Products List Endpoint (with Supabase query builder & in-memory fallback)
+app.get('/api/products', async (req, res) => {
+  const { search, category, minPrice, maxPrice, isAvailable, sort, order = 'desc', page = 1, limit = 12, featured } = req.query;
+
+  try {
+    if (supabase) {
+      let query = supabase.from('products').select('*', { count: 'exact' });
+
+      if (category && category !== 'all') {
+        query = query.eq('category', category.toLowerCase());
+      }
+      if (search) {
+        query = query.ilike('name', `%${search}%`);
+      }
+      if (minPrice) {
+        query = query.gte('price', Number(minPrice));
+      }
+      if (maxPrice) {
+        query = query.lte('price', Number(maxPrice));
+      }
+      if (isAvailable !== undefined) {
+        query = query.eq('is_available', isAvailable === 'true');
+      }
+      if (featured === 'true') {
+        query = query.eq('is_featured', true);
+      }
+
+      // Sort
+      const isAsc = order === 'asc';
+      if (sort === 'price') {
+        query = query.order('price', { ascending: isAsc });
+      } else if (sort === 'rating') {
+        query = query.order('rating', { ascending: isAsc });
+      } else {
+        query = query.order('created_at', { ascending: isAsc });
+      }
+
+      // Pagination
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const from = (pageNum - 1) * limitNum;
+      const to = from + limitNum - 1;
+
+      const { data, count, error } = await query.range(from, to);
+
+      if (!error && data && data.length > 0) {
+        return res.json({
+          success: true,
+          data: data.map(mapProductFromDb),
+          pagination: {
+            currentPage: pageNum,
+            totalPages: Math.ceil((count || data.length) / limitNum) || 1,
+            totalCount: count || data.length,
+            hasNextPage: to + 1 < (count || data.length),
+            hasPrevPage: pageNum > 1,
+            limit: limitNum,
+          }
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('Supabase fetch failed, falling back to local dataset:', err.message);
   }
 
-  if (req.params.id || (req.path !== '/' && req.path.length > 1)) {
-    const id = req.path.replace('/', '');
-    const product = inMemoryProducts.find(p => p._id === id);
-    if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
-    const related = inMemoryProducts.filter(p => p.category === product.category && p._id !== id).slice(0, 4);
-    return res.json({ success: true, data: product, related });
-  }
-
-  // List query handling
-  const { search, category, minPrice, maxPrice, isAvailable, sort, order, page = 1, limit = 12, featured } = req.query;
-  let result = [...inMemoryProducts];
+  // Fallback in-memory query processing
+  let result = [...fallbackProducts];
 
   if (search) {
     const q = search.toLowerCase();
@@ -511,13 +596,46 @@ app.use('/api/products', (req, res, next) => {
   });
 });
 
-// Real Mongo routes
-const productRoutes = require('./routes/productRoutes');
-app.use('/api/products', productRoutes);
+// Single Product Details Endpoint
+app.get('/api/products/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    if (supabase) {
+      const { data: product, error } = await supabase.from('products').select('*').eq('id', id).single();
+      if (!error && product) {
+        const { data: related } = await supabase
+          .from('products')
+          .select('*')
+          .eq('category', product.category)
+          .neq('id', id)
+          .limit(4);
+
+        return res.json({
+          success: true,
+          data: mapProductFromDb(product),
+          related: (related || []).map(mapProductFromDb),
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Supabase fetch product error:', e.message);
+  }
+
+  // Fallback single product
+  const product = fallbackProducts.find(p => p._id === id);
+  if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+  const related = fallbackProducts.filter(p => p.category === product.category && p._id !== id).slice(0, 4);
+  return res.json({ success: true, data: product, related });
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'FreshBasket API is running', dbConnected: isDbConnected });
+  res.json({
+    status: 'OK',
+    message: 'FreshBasket API is running with Supabase integration',
+    database: supabase ? 'Supabase (Connected)' : 'Supabase (Fallback Mode - Add SUPABASE_URL & SUPABASE_ANON_KEY to .env)',
+  });
 });
 
 // 404 handler
@@ -532,22 +650,10 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/freshbasket';
 
-// Start server first so frontend never hangs
 app.listen(PORT, () => {
   console.log(`🚀 FreshBasket Server running on http://localhost:${PORT}`);
+  console.log(`📦 Database Adapter: Supabase`);
 });
-
-// Attempt MongoDB connection asynchronously
-mongoose
-  .connect(MONGODB_URI, { serverSelectionTimeoutMS: 3000 })
-  .then(() => {
-    isDbConnected = true;
-    console.log('✅ Connected to MongoDB');
-  })
-  .catch((err) => {
-    console.log('ℹ️ Local MongoDB not detected or offline. Running seamlessly on embedded catalog dataset.');
-  });
 
 module.exports = app;
