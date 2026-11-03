@@ -1,10 +1,11 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { ToastProvider } from './context/ToastContext';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import CartDrawer from './components/common/CartDrawer';
+import ProtectedRoute from './components/common/ProtectedRoute';
 import Home from './pages/Home';
 import Catalog from './pages/Catalog';
 import Fruits from './pages/Fruits';
@@ -25,27 +26,70 @@ function App() {
               <Header />
               <main className="flex-1">
                 <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/catalog" element={<Catalog />} />
-                  <Route path="/fruits" element={<Fruits />} />
-                  <Route path="/vegetables" element={<Vegetables />} />
-                  <Route path="/flowers" element={<Flowers />} />
-                  <Route path="/product/:id" element={<ProductDetails />} />
-                  <Route path="/cart" element={<Cart />} />
+                  {/* Public Authentication Routes */}
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
+
+                  {/* Protected Storefront Routes - Requires Sign-In First */}
                   <Route
-                    path="*"
+                    path="/"
                     element={
-                      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-                        <p className="text-6xl font-extrabold text-primary-200">404</p>
-                        <p className="text-xl font-bold text-gray-700 mt-4">Page Not Found</p>
-                        <a href="/" className="mt-6 btn-primary px-8 py-3 rounded-2xl">
-                          Return Home
-                        </a>
-                      </div>
+                      <ProtectedRoute>
+                        <Home />
+                      </ProtectedRoute>
                     }
                   />
+                  <Route
+                    path="/catalog"
+                    element={
+                      <ProtectedRoute>
+                        <Catalog />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/fruits"
+                    element={
+                      <ProtectedRoute>
+                        <Fruits />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/vegetables"
+                    element={
+                      <ProtectedRoute>
+                        <Vegetables />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/flowers"
+                    element={
+                      <ProtectedRoute>
+                        <Flowers />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/product/:id"
+                    element={
+                      <ProtectedRoute>
+                        <ProductDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/cart"
+                    element={
+                      <ProtectedRoute>
+                        <Cart />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Catch-all */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </main>
               <Footer />
