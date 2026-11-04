@@ -85,11 +85,30 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white/95 backdrop-blur-md shadow-xs sticky top-0 z-50 border-b border-gray-100">
-      {/* Top Banner Ticker */}
-      <div className="bg-primary-900 text-white text-[11px] py-1 px-4 text-center font-medium tracking-wide flex items-center justify-center gap-2">
-        <Sparkles className="w-3.5 h-3.5 text-accent" />
-        <span>Use coupon <strong>FRESH10</strong> for 10% OFF | Free delivery over Rs. 499!</span>
+    <header className="bg-white/97 backdrop-blur-xl shadow-sm sticky top-0 z-50 border-b border-gray-100/80">
+      {/* Scrolling Ticker */}
+      <div className="bg-gradient-to-r from-primary-900 via-emerald-900 to-primary-900 text-white text-[11px] py-1.5 overflow-hidden relative">
+        <div className="ticker-track">
+          {[
+            'Use coupon FRESH10 for 10% OFF',
+            'Free delivery on orders above Rs. 499',
+            'Use SAVE20 for 20% OFF orders above Rs. 999',
+            'Fresh organic produce daily',
+            'Bangalore same-day delivery available',
+            'Quality guaranteed on every order',
+            'Use coupon FRESH10 for 10% OFF',
+            'Free delivery on orders above Rs. 499',
+            'Use SAVE20 for 20% OFF orders above Rs. 999',
+            'Fresh organic produce daily',
+            'Bangalore same-day delivery available',
+            'Quality guaranteed on every order',
+          ].map((msg, i) => (
+            <span key={i} className="inline-flex items-center gap-2 mx-6 font-medium whitespace-nowrap">
+              <Sparkles className="w-3 h-3 text-orange-400 flex-shrink-0" />
+              {msg}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
