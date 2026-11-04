@@ -15,7 +15,7 @@ export default function Catalog() {
     featured: searchParams.get('featured') || undefined,
   };
 
-  const { products, loading, error, pagination, params, updateParams, goToPage } = useProducts(initialParams);
+  const { products, loading, error, pagination, params, updateParams, goToPage, refetch } = useProducts(initialParams);
 
   useEffect(() => {
     document.title = 'All Products - FreshBasket';
@@ -53,7 +53,7 @@ export default function Catalog() {
               </div>
             )}
 
-            <ProductGrid products={products} loading={loading} error={error} />
+            <ProductGrid products={products} loading={loading} error={error} onRetry={refetch} />
             <Pagination pagination={pagination} onPageChange={goToPage} />
           </div>
         </div>

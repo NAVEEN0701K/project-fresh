@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Truck, Leaf, Shield, Clock, Star, ArrowRight, Zap, TrendingUp } from 'lucide-react';
+import { Truck, Leaf, Shield, Clock, Star, ArrowRight, Zap, TrendingUp, Sparkles } from 'lucide-react';
 import HeroBanner from '../components/catalog/HeroBanner';
 import CategoryList from '../components/catalog/CategoryList';
 import ProductGrid from '../components/catalog/ProductGrid';
+import ProductSlider from '../components/catalog/ProductSlider';
 import { useProducts } from '../hooks/useProducts';
 
 const BENEFITS = [
@@ -43,15 +44,6 @@ const OFFERS = [
   },
 ];
 
-const TICKER_ITEMS = [
-  'Use FRESH10 for 10% OFF',
-  'Free delivery on orders above Rs. 499',
-  'New arrivals daily from certified farms',
-  'Use SAVE20 for 20% OFF orders above Rs. 999',
-  'Premium quality guaranteed on every order',
-  'Bangalore same-day delivery available',
-];
-
 function AnimatedCounter({ target, suffix = '' }) {
   const [count, setCount] = useState(0);
   const ref = useRef(null);
@@ -87,8 +79,8 @@ function AnimatedCounter({ target, suffix = '' }) {
 }
 
 export default function Home() {
-  const { products: featured, loading: featuredLoading, error: featuredError } = useProducts({ featured: 'true', limit: 8 });
-  const { products: newest, loading: newestLoading, error: newestError } = useProducts({ limit: 8, sort: 'createdAt', order: 'desc' });
+  const { products: featured, loading: featuredLoading, error: featuredError, refetch: refetchFeatured } = useProducts({ featured: 'true', limit: 10 });
+  const { products: newest, loading: newestLoading, error: newestError, refetch: refetchNewest } = useProducts({ limit: 8, sort: 'createdAt', order: 'desc' });
 
   useEffect(() => {
     document.title = 'FreshBasket - Farm-Fresh Marketplace';
@@ -96,7 +88,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen" style={{ background: '#F0FAF4' }}>
-      {/* Hero */}
+      {/* Hero Banner */}
       <HeroBanner />
 
       {/* Benefits Strip */}
@@ -105,7 +97,7 @@ export default function Home() {
           {BENEFITS.map((b, i) => (
             <div
               key={b.title}
-              className="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-default animate-slide-up"
+              className="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-xs border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-default animate-slide-up"
               style={{ animationDelay: `${i * 0.08}s` }}
             >
               <div className={`w-10 h-10 ${b.bg} rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${b.color}`}>
@@ -122,6 +114,18 @@ export default function Home() {
 
       {/* Categories */}
       <CategoryList />
+
+      {/* Dynamic Product Carousel / Slider: Featured Top Picks */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
+        <ProductSlider
+          products={featured}
+          title="Featured Farm Picks"
+          subtitle="Customer favorites moving fast — swipe or click arrows to explore"
+          badge="Popular Today"
+          autoPlay={true}
+          autoPlayInterval={3800}
+        />
+      </section>
 
       {/* Stats Banner */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
@@ -149,34 +153,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Products */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-6 h-6 bg-amber-100 rounded-lg flex items-center justify-center">
-                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-              </div>
-              <span className="text-sm font-bold text-amber-600 uppercase tracking-wide">Featured</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Top Picks for You</h2>
-          </div>
-          <Link
-            to="/catalog?featured=true"
-            className="hidden sm:flex items-center gap-1.5 bg-primary-50 text-primary-700 font-bold text-sm px-4 py-2 rounded-xl hover:bg-primary-100 transition-colors"
-          >
-            View All <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-        <ProductGrid products={featured} loading={featuredLoading} error={featuredError} />
-        <Link
-          to="/catalog?featured=true"
-          className="sm:hidden mt-4 flex items-center justify-center gap-1.5 text-primary-700 font-semibold text-sm"
-        >
-          View All Featured <ArrowRight className="w-4 h-4" />
-        </Link>
-      </section>
-
       {/* Promotional Offers */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <div className="flex items-center gap-3 mb-6">
@@ -192,7 +168,6 @@ export default function Home() {
               className={`relative overflow-hidden rounded-3xl ring-1 ${offer.ring} bg-gradient-to-br ${offer.gradient} p-6 flex flex-col justify-between min-h-[220px] group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 animate-slide-up`}
               style={{ animationDelay: `${i * 0.1}s` }}
             >
-              {/* Orb */}
               <div className="absolute -top-8 -right-8 w-28 h-28 bg-white/15 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
               <div className="absolute bottom-0 left-0 w-20 h-20 bg-black/10 rounded-full blur-2xl" />
 
@@ -212,7 +187,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Newest Products */}
+      {/* Newest Products Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -232,7 +207,7 @@ export default function Home() {
             All Products <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
-        <ProductGrid products={newest} loading={newestLoading} error={newestError} />
+        <ProductGrid products={newest} loading={newestLoading} error={newestError} onRetry={refetchNewest} />
       </section>
 
       {/* Newsletter */}

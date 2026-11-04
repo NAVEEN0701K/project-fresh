@@ -6,7 +6,7 @@ import ProductSort from '../components/catalog/ProductSort';
 import Pagination from '../components/catalog/Pagination';
 
 export default function Vegetables() {
-  const { products, loading, error, pagination, params, updateParams, goToPage } = useProducts({
+  const { products, loading, error, pagination, params, updateParams, goToPage, refetch } = useProducts({
     category: 'vegetables',
   });
 
@@ -34,7 +34,7 @@ export default function Vegetables() {
           <ProductFilters params={params} onUpdate={updateParams} totalCount={pagination.totalCount} />
           <div className="flex-1 min-w-0">
             <ProductSort params={params} onUpdate={updateParams} totalCount={pagination.totalCount} />
-            <ProductGrid products={products} loading={loading} error={error} />
+            <ProductGrid products={products} loading={loading} error={error} onRetry={refetch} />
             <Pagination pagination={pagination} onPageChange={goToPage} />
           </div>
         </div>

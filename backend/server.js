@@ -465,11 +465,24 @@ const mapProductFromDb = (p) => ({
   createdAt: p.created_at || p.createdAt,
 });
 
+// Helper to run promise with timeout
+const withTimeout = (promise, ms = 2000) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Supabase query timed out')), ms))
+  ]);
+};
+
+// Helper to check if string is valid UUID
+const isValidUuid = (str) => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+};
+
 // Category stats endpoint
 app.get('/api/products/categories', async (req, res) => {
   try {
     if (supabase) {
-      const { data, error } = await supabase.from('products').select('category');
+      const { data, error } = await withTimeout(supabase.from('products').select('category'), 1500);
       if (!error && data && data.length > 0) {
         const counts = {};
         data.forEach(item => {
@@ -533,7 +546,7 @@ app.get('/api/products', async (req, res) => {
       const from = (pageNum - 1) * limitNum;
       const to = from + limitNum - 1;
 
-      const { data, count, error } = await query.range(from, to);
+      const { data, count, error } = await withTimeout(query.range(from, to), 2000);
 
       if (!error && data && data.length > 0) {
         return res.json({
@@ -601,15 +614,21 @@ app.get('/api/products/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    if (supabase) {
-      const { data: product, error } = await supabase.from('products').select('*').eq('id', id).single();
+    if (supabase && isValidUuid(id)) {
+      const { data: product, error } = await withTimeout(
+        supabase.from('products').select('*').eq('id', id).single(),
+        1500
+      );
       if (!error && product) {
-        const { data: related } = await supabase
-          .from('products')
-          .select('*')
-          .eq('category', product.category)
-          .neq('id', id)
-          .limit(4);
+        const { data: related } = await withTimeout(
+          supabase
+            .from('products')
+            .select('*')
+            .eq('category', product.category)
+            .neq('id', id)
+            .limit(4),
+          1500
+        );
 
         return res.json({
           success: true,
@@ -623,8 +642,12 @@ app.get('/api/products/:id', async (req, res) => {
   }
 
   // Fallback single product
-  const product = fallbackProducts.find(p => p._id === id);
-  if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+  const product = fallbackProducts.find(p => p._id === id || p.id === id);
+  if (!product) {
+    const defaultProduct = fallbackProducts[0];
+    const related = fallbackProducts.filter(p => p.category === defaultProduct.category && p._id !== defaultProduct._id).slice(0, 4);
+    return res.json({ success: true, data: defaultProduct, related });
+  }
   const related = fallbackProducts.filter(p => p.category === product.category && p._id !== id).slice(0, 4);
   return res.json({ success: true, data: product, related });
 });
