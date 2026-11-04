@@ -26,6 +26,7 @@ import { useToast } from '../context/ToastContext';
 import { formatPrice } from '../utils/formatPrice';
 import ProductImageGallery from '../components/catalog/ProductImageGallery';
 import ProductSlider from '../components/catalog/ProductSlider';
+import CategoryThemedBackground from '../components/common/CategoryThemedBackground';
 import Loader from '../components/common/Loader';
 import { productsData } from '../data/products';
 
@@ -172,8 +173,11 @@ export default function ProductDetails() {
       : 0;
 
   return (
-    <div className="min-h-screen" style={{ background: '#F0FAF4' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Dynamic Animated Category Background (Fruits / Vegetables / Flowers) */}
+      <CategoryThemedBackground category={product.category} />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mb-6 flex-wrap">
           <Link to="/" className="hover:text-primary-700 transition-colors">

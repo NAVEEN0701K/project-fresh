@@ -5,6 +5,7 @@ import ProductGrid from '../components/catalog/ProductGrid';
 import ProductFilters from '../components/catalog/ProductFilters';
 import ProductSort from '../components/catalog/ProductSort';
 import Pagination from '../components/catalog/Pagination';
+import CategoryThemedBackground from '../components/common/CategoryThemedBackground';
 
 export default function Catalog() {
   const [searchParams] = useSearchParams();
@@ -22,8 +23,11 @@ export default function Catalog() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Category Themed Background based on active filter */}
+      <CategoryThemedBackground category={params.category || 'all'} />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">All Products</h1>
           <p className="text-gray-500 mt-1">Browse our complete fresh catalog</p>

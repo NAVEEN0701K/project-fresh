@@ -4,6 +4,7 @@ import ProductGrid from '../components/catalog/ProductGrid';
 import ProductFilters from '../components/catalog/ProductFilters';
 import ProductSort from '../components/catalog/ProductSort';
 import Pagination from '../components/catalog/Pagination';
+import CategoryThemedBackground from '../components/common/CategoryThemedBackground';
 
 export default function Vegetables() {
   const { products, loading, error, pagination, params, updateParams, goToPage, refetch } = useProducts({
@@ -15,8 +16,12 @@ export default function Vegetables() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 h-40 sm:h-48 mx-4 sm:mx-6 lg:mx-8 mt-4 rounded-3xl">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Animated Vegetables Background */}
+      <CategoryThemedBackground category="vegetables" />
+
+      <div className="relative z-10">
+        <div className="relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 h-40 sm:h-48 mx-4 sm:mx-6 lg:mx-8 mt-4 rounded-3xl shadow-lg">
         <div className="absolute inset-0 bg-black/10" />
         <img
           src="https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=1200&q=70"
@@ -38,6 +43,7 @@ export default function Vegetables() {
             <Pagination pagination={pagination} onPageChange={goToPage} />
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
